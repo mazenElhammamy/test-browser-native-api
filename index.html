@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+
+<video id="video" muted autoplay playsinline></video>
+<h5>Selected camera</h5>
+<div id="selected"></div>
+<h5>Available cameras</h5>
+<div id="camera"></div>
+<h5>Result</h5>
+<div id="result"></div>
+
+<script id="rendered-js" type="module">
+import { BarcodeDetectorPolyfill } from "https://cdn.jsdelivr.net/npm/@undecaf/barcode-detector-polyfill@0.9.11/dist/main.js";
+
+try {
+    window['BarcodeDetector'].getSupportedFormats()
+} catch {
+    window['BarcodeDetector'] = BarcodeDetectorPolyfill
+}
+navigator.mediaDevices.getUserMedia({audio: false, video: {facingMode: 'environment'}})
+        .then(
+                stream => {document.getElementById("video").srcObject = stream
+                document.getElementById("selected").innerText = JSON.stringify({id: stream.getVideoTracks()[0].id, label: stream.getVideoTracks()[0].label}, null, "\t")
+                
+                navigator.mediaDevices.enumerateDevices().then(devices => {
+                    const labels = []
+                    devices.forEach(device => {
+                        if(device.kind == "videoinput"){
+                            labels.push(device.label)
+                        }
+                    })
+                    document.getElementById("camera").innerText = JSON.stringify(devices, null, "\t")
+                })
+        })
+        .catch(error => {document.getElementById("result").innerText = JSON.stringify(error)})
+
+
+
+const formats = await BarcodeDetector.getSupportedFormats()
+const detector = new BarcodeDetector({ formats: formats })
+
+setInterval(
+        () => detector.detect(document.getElementById("video"))
+                .then(barcodes => {document.getElementById("result").innerText = JSON.stringify(barcodes, null, "\t")}), 
+        1000)
+</script>
+</body>
+</html>
